@@ -1,0 +1,29 @@
+pipeline {
+    agent { label 'kubeagent' }
+
+    enviroment {
+        DOCKER_USERNAME = "ahemida96"
+    }
+
+    stages {
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${env.DOCKER_USERNAME}/blog-app:${env.BUILD_NUMBER} ."
+                }
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "docker-credentials", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
+                    sh """
+                    echo $PASSWORD | docker login -u $USERNAME --password-stdin
+                    docker push $USERNAME/blog-app:${env.BUILD_NUMBER}
+                    """
+                }
+            }
+        }
+    }
+}
+
+
