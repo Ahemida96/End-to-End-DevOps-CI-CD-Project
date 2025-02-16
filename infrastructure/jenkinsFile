@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+    environment {
+        GITHUB_TOKEN = credentials('github-token') // Use the GitHub token stored in Jenkins
+        SLEEPAMOUNT  = 120
+    }
+    stages {
+
+        stage('Clone Repository') {
+            steps {
+                script {
+                    sh 'git clone https://${GITHUB_TOKEN}@github.com/Ahemida/repository.git'
+                }
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir('repository/infrastructure/terraform') {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                dir('repository/infrastructure/terraform') {
+                    sh 'terraform apply -auto-approve'
+                    sh 'timeout'
+                }
+            }
+            post {
+                always {
+                    echo "Wait until infrastructure to be provisioned"
+                    sleep(time:${env.SLEEPAMOUNT}, unit: "SECONDS")
+                }
+            }
+        }
+
+        // stage ("wait_for_provisioning") {
+        //     steps {
+                
+                
+        //     }
+        // }
+
+        stage('Run Ansible Playbook') {
+            steps {
+                dir('repository/infrastructure/ansible') {
+                    sh '''
+                    ansible-playbook -i inventory playbook.yml
+                    '''
+                }
+            }
+        }
+
+        stage ('Check for existence of index.html') {
+            steps {
+                script {
+                    if (fileExists('/var/www/html/index.html')) {
+                        echo "index.html found!"
+                    }
+                }
+            }
+        }
+    }
+}
