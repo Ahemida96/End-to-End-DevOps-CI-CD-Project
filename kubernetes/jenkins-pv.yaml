@@ -11,5 +11,5 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: /jenkins-home
-  persistentVolumeReclaimPolicy: Recycle
+    path: /jenkins_home
+  persistentVolumeReclaimPolicy: Retain

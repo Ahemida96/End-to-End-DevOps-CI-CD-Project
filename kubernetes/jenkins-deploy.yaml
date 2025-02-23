@@ -21,8 +21,9 @@ spec:
       # restartPolicy: Never
       serviceAccountName: jenkins-admin
       securityContext:
-          fsGroup: 1000 
-          runAsUser: 1000
+        fsGroup: 1000
+        runAsUser: 0
+
       initContainers:
       - name: install-docker
         image: docker:stable
@@ -36,7 +37,8 @@ spec:
         command: ["cp", "/usr/local/bin/kubectl", "/data/kubectl"]    
         volumeMounts:
         - name: kubectl
-          mountPath: "/data"    
+          mountPath: "/data"  
+
       containers:
         - name: jenkins
           image: jenkins/jenkins:lts
@@ -53,9 +55,23 @@ spec:
               containerPort: 8080
             - name: jnlpport
               containerPort: 50000
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 5
           volumeMounts:
             - name: jenkins-home-volume
-              mountPath: "/var/jenkins-home"
+              mountPath: "/var/jenkins_home"
+            - name: jenkins-logs
+              mountPath: /var/log/jenkins
             - name: docker-sock
               mountPath: /var/run/docker.sock
             - name: docker
@@ -75,4 +91,6 @@ spec:
         - name: docker
           emptyDir: {}
         - name: kubectl
+          emptyDir: {}
+        - name: jenkins-logs
           emptyDir: {}
